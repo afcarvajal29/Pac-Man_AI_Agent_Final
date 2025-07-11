@@ -27,7 +27,7 @@ FRAME_SKIP = 6  # Number of frames to repeat each action
 
 # Training optimization parameters
 RENDER_EVERY = 1  # Only render every N episodes
-DISABLE_RENDERING = True # Set to True to completely disable pygame rendering
+DISABLE_RENDERING = False # Set to True to completely disable pygame rendering
 PRINT_EVERY = 1    # Print stats every N episodes
 SAVE_EVERY = 10   # Save model every N episodes
 
@@ -162,7 +162,7 @@ def load_existing_model():
     return None, 0, EPSILON_START
 
 # ========== MAIN ==========
-def train():
+def train(loaded_policy=None, start_episode=None, epsilon=None):
     env = PacManEnv()
     
     # Initialize pygame but don't create window initially
@@ -171,7 +171,8 @@ def train():
     replay_buffer = ReplayBuffer(MEMORY_SIZE, DEVICE)
 
     # Try to load existing model, otherwise create new
-    loaded_policy, start_episode, epsilon = load_existing_model()
+    loaded_policy, start_episode, epsilon = load_existing_model() if loaded_policy is None else (loaded_policy, start_episode, epsilon)
+
     
     if loaded_policy is not None:
         policy_net = loaded_policy
@@ -338,5 +339,7 @@ def train():
 
 if __name__ == "__main__":
 
-    
-    train()
+
+    # Load existing model if available, otherwise start latest
+    p, ep, epsilon = load_model("models/dqn_pacman_ep50_20250711_001006.pth")
+    train(p, ep, epsilon)
