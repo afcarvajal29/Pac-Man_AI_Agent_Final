@@ -1,4 +1,4 @@
-mport numpy as np
+import numpy as np
 import cv2
 
 def initial_bitmap(frame, grid_rows=32, grid_cols=28):
