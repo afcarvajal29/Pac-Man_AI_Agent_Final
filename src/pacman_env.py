@@ -14,7 +14,7 @@ from ram_map import (
 )
 
 from reward_model import (
-    compute_reward as reward_fn,
+    direct_reward as reward_fn,
     compute_risk as risk_fn,
     compute_utility as utility_fn
 )
@@ -35,7 +35,7 @@ class PacManEnv(gym.Env):
 
         self.render_mode = render_mode
         self.env = retro.make("MsPacMan-Nes", render_mode="rgb_array")
-        self.v_state = {}  # Persistent state for reward function
+        self.last_score = 0  # Track score for direct reward
 
         # NES action space: already discrete with all directions
         self.action_space = self.env.action_space
@@ -55,7 +55,7 @@ class PacManEnv(gym.Env):
             raise RuntimeError("render() returned None — check render_mode")
 
         self.bitmap = initial_bitmap(frame)
-        self.v_state = {}  # Reset persistent state
+        self.last_score = 0  # Reset score tracking
 
         return self._get_obs(), info
 
@@ -77,7 +77,7 @@ class PacManEnv(gym.Env):
         
         ghosts = list(game_state["ghosts"].values())
 
-        v, self.v_state = self.compute_reward(pacman_pos, target_tile, ghosts, self.v_state)
+        v, self.last_score = self.compute_reward(self.get_ram(), self.last_score)
         r = self.compute_risk(pacman_pos, ghosts)
         l = self.compute_utility(v, r)
         
@@ -93,11 +93,11 @@ class PacManEnv(gym.Env):
     
 
 
-    def compute_reward(self, pacman_pos, target_tile, ghosts, last_reward_state):
+    def compute_reward(self, ram, last_score):
         """
-        Wraps reward_fn() from reward.py
+        Wraps direct_reward() from reward.py
         """
-        return reward_fn(pacman_pos, target_tile, ghosts, last_reward_state)
+        return reward_fn(ram, last_score)
 
     def compute_risk(self, pacman_pos, ghosts):
         """
