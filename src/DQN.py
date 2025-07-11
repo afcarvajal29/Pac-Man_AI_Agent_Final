@@ -27,7 +27,7 @@ FRAME_SKIP = 6  # Number of frames to repeat each action
 
 # Training optimization parameters
 RENDER_EVERY = 1  # Only render every N episodes
-DISABLE_RENDERING = False # Set to True to completely disable pygame rendering
+DISABLE_RENDERING = True # Set to True to completely disable pygame rendering
 PRINT_EVERY = 1    # Print stats every N episodes
 SAVE_EVERY = 10   # Save model every N episodes
 
@@ -341,5 +341,7 @@ if __name__ == "__main__":
 
 
     # Load existing model if available, otherwise start latest
-    p, ep, epsilon = load_model("models/dqn_pacman_ep50_20250711_001006.pth")
-    train(p, ep, epsilon)
+    # p, ep, epsilon = load_model("models/dqn_pacman_ep50_20250711_001006.pth")
+    # train(p, ep, epsilon)
+
+    train()
