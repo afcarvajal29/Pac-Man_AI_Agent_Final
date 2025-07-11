@@ -25,6 +25,9 @@ PINK_FRIGHTENED  = 0xD6  # reliable
 CYAN_FRIGHTENED  = 0xCA  # not reliable
 ORANGE_FRIGHTENED= 0xCD  # not reliable
 
+# Score RAM addresses (ASCII encoded)
+SCORE_ADDRESSES = [0x40, 0x41, 0x42, 0x43, 0x44, 0x45]  # Most to least significant
+
 
 def get_all_positions(ram):
     """
@@ -35,19 +38,19 @@ def get_all_positions(ram):
     """
     def read_nes_coords(x_addr, y_addr):
         """Read 2-byte NES coordinates and convert to maze grid"""
-        # Read 2-byte coordinates safely
-        x = np.int16(ram[x_addr]) + (np.int16(ram[x_addr + 1]) << 8)
-        y = np.int16(ram[y_addr]) + (np.int16(ram[y_addr + 1]) << 8)
-    
-        # Convert to maze coordinates (protected arithmetic)
-        with np.errstate(all='ignore'):
-            maze_col = (x - np.int16(8)) // 8
-            maze_row = (y - np.int16(32)) // 8
+        # Read raw coordinates
+        x = ram[x_addr] + (ram[x_addr + 1] << 8)
+        y = ram[y_addr] + (ram[y_addr + 1] << 8)
         
-        # Validate bounds
-        if (0 <= maze_col < 21) and (0 <= maze_row < 30):
-            return (maze_row, maze_col)
-        return (-1, -1)
+        # Handle signed 16-bit values
+        if x > 32767: x -= 65536
+        if y > 32767: y -= 65536
+        
+        # Convert to maze coordinates with correct offsets
+        maze_col = max(0, min(20, (max(0, x) - 16) // 8)) if x >= 16 else 0
+        maze_row = max(0, min(31, (max(0, y) - 40) // 8)) if y >= 40 else 0
+        
+        return (int(maze_row), int(maze_col))
 
     return {
         'pacman': read_nes_coords(PACMAN_X, PACMAN_Y),
@@ -65,8 +68,8 @@ def get_frightened_states(ram):
     - Global timer as fallback
     """
     frightened = {
-        'red': ram[RED_FRIGHTENED] == 0x05 or ram[FRIGHTENED_TIMER] > 0,
-        'pink': ram[PINK_FRIGHTENED] == 0x05 or ram[FRIGHTENED_TIMER] > 0,
+        'red': ram[RED_FRIGHTENED] == 0x05,
+        'pink': ram[PINK_FRIGHTENED] == 0x05,
         'cyan': ram[FRIGHTENED_TIMER] > 0 and ram[CYAN_FRIGHTENED] in (0x01, 0x03),
         'orange': ram[FRIGHTENED_TIMER] > 0 and ram[ORANGE_FRIGHTENED] in (0x01, 0x03),
         'global_timer': ram[FRIGHTENED_TIMER],
@@ -84,3 +87,17 @@ def get_scatter_chase_timer(ram):
     Returns the global scatter/chase timer.
     """
     return ram[SCATTER_TIMER]
+
+def get_score(ram):
+    """
+    Extract score from RAM (ASCII encoded, 6 digits).
+    """
+    score = 0
+    for addr in SCORE_ADDRESSES:
+        digit = ram[addr]
+        # Convert ASCII to digit (0x30-0x39 -> 0-9)
+        if 0x30 <= digit <= 0x39:
+            score = score * 10 + (digit - 0x30)
+        else:
+            score = score * 10  # Treat invalid as 0
+    return score
